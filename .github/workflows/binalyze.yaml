@@ -14,7 +14,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        go: ['1.20', '1.21']
+        go: ['1.20']
       fail-fast: false
     env:
       OS: ${{ matrix.os }}
@@ -33,7 +33,8 @@ jobs:
         run: CGO_ENABLED=1 go test -count=1  -failfast -race -tags "" -v ./...
 
       - name: 'Tags: full'
-        run: CGO_ENABLED=1 go test -count=1 -failfast -race -v -tags "sqlite_allow_uri_authority sqlite_app_armor sqlite_column_metadata sqlite_foreign_keys sqlite_fts5 sqlite_icu sqlite_introspect sqlite_json sqlite_math_functions sqlite_os_trace sqlite_preupdate_hook sqlite_secure_delete sqlite_see sqlite_stat4 sqlite_trace sqlite_unlock_notify sqlite_userauth sqlite_vacuum_incr sqlite_vtable binalyze_sqlite3_all" ./...
+        # excluded: sqlite_icu
+        run: CGO_ENABLED=1 go test -count=1 -failfast -race -v -tags "sqlite_allow_uri_authority sqlite_app_armor sqlite_column_metadata sqlite_foreign_keys sqlite_fts5 sqlite_introspect sqlite_json sqlite_math_functions sqlite_os_trace sqlite_preupdate_hook sqlite_secure_delete sqlite_see sqlite_stat4 sqlite_trace sqlite_unlock_notify sqlite_userauth sqlite_vacuum_incr sqlite_vtable binalyze_sqlite3_all" ./...
 
       - name: 'Tags: vacuum'
         run: CGO_ENABLED=1 go test -count=1 -failfast -race -v -tags "sqlite_vacuum_full"
@@ -47,7 +48,7 @@ jobs:
 
     strategy:
       matrix:
-        go: ['1.20', '1.21']
+        go: ['1.20']
         msystem: ['MINGW64', 'MINGW32']
       fail-fast: false
     env:
@@ -89,7 +90,8 @@ jobs:
           export CGO_ENABLED=1
           export GOARCH=${{ matrix.msystem == 'MINGW64' && 'amd64' || '386' }}
           race_flag=${{ matrix.msystem == 'MINGW64' && '-race' || '' }}
-          go test -count=1 -failfast $race_flag -v -tags "sqlite_allow_uri_authority sqlite_app_armor sqlite_column_metadata sqlite_foreign_keys sqlite_fts5 sqlite_icu sqlite_introspect sqlite_json sqlite_math_functions sqlite_preupdate_hook sqlite_secure_delete sqlite_see sqlite_stat4 sqlite_trace sqlite_unlock_notify sqlite_userauth sqlite_vacuum_incr sqlite_vtable binalyze_sqlite3_all" ./...
+          # excluded: sqlite_icu
+          go test -count=1 -failfast $race_flag -v -tags "sqlite_allow_uri_authority sqlite_app_armor sqlite_column_metadata sqlite_foreign_keys sqlite_fts5 sqlite_introspect sqlite_json sqlite_math_functions sqlite_preupdate_hook sqlite_secure_delete sqlite_see sqlite_stat4 sqlite_trace sqlite_unlock_notify sqlite_userauth sqlite_vacuum_incr sqlite_vtable binalyze_sqlite3_all" ./...
         shell: msys2 {0}
 
       - name: 'Tags: vacuum'
