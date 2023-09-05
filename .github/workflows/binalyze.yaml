@@ -1,0 +1,99 @@
+name: Binalyze
+
+on: [push, pull_request]
+
+jobs:
+
+  test-unix:
+    name: Test
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        go: ['1.20', '1.21']
+      fail-fast: false
+    env:
+      OS: ${{ matrix.os }}
+      GO: ${{ matrix.go }}
+    steps:
+      - if: startsWith(matrix.os, 'macos')
+        run: brew update
+
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+
+      - uses: actions/checkout@v2
+
+      - name: 'Tags: default'
+        run: CGO_ENABLED=1 go test -count=1  -failfast -race -tags "" -v ./...
+
+      - name: 'Tags: full'
+        run: CGO_ENABLED=1 go test -count=1 -failfast -race -v -tags "sqlite_allow_uri_authority sqlite_app_armor sqlite_column_metadata sqlite_foreign_keys sqlite_fts5 sqlite_icu sqlite_introspect sqlite_json sqlite_math_functions sqlite_os_trace sqlite_preupdate_hook sqlite_secure_delete sqlite_see sqlite_stat4 sqlite_trace sqlite_unlock_notify sqlite_userauth sqlite_vacuum_incr sqlite_vtable binalyze_sqlite3_all" ./...
+
+      - name: 'Tags: vacuum'
+        run: CGO_ENABLED=1 go test -count=1 -failfast -race -v -tags "sqlite_vacuum_full"
+
+  test-windows:
+    name: Test for Windows
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+
+    strategy:
+      matrix:
+        go: ['1.20', '1.21']
+        msystem: ['MINGW64', 'MINGW32']
+      fail-fast: false
+    env:
+      OS: windows-latest
+      GO: ${{ matrix.go }}
+    steps:
+      - uses: msys2/setup-msys2@v2
+        if: ${{ matrix.msystem == 'MINGW64' }}
+        with:
+          update: true
+          install: mingw-w64-x86_64-toolchain 
+          msystem: ${{ matrix.msystem }}
+          path-type: inherit
+      
+      - uses: msys2/setup-msys2@v2
+        if: ${{ matrix.msystem == 'MINGW32' }}
+        with:
+          update: true
+          install: mingw-w64-i686-toolchain 
+          msystem: ${{ matrix.msystem }}
+          path-type: inherit
+
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+
+      - uses: actions/checkout@v2
+
+      - name: 'Tags: default'
+        run: |
+          export CGO_ENABLED=1
+          export GOARCH=${{ matrix.msystem == 'MINGW64' && 'amd64' || '386' }}
+          race_flag=${{ matrix.msystem == 'MINGW64' && '-race' || '' }}
+          go test -count=1 -failfast $race_flag -v -tags "" ./...
+        shell: msys2 {0}
+
+      - name: 'Tags: full'
+        run: |
+          export CGO_ENABLED=1
+          export GOARCH=${{ matrix.msystem == 'MINGW64' && 'amd64' || '386' }}
+          race_flag=${{ matrix.msystem == 'MINGW64' && '-race' || '' }}
+          go test -count=1 -failfast $race_flag -v -tags "sqlite_allow_uri_authority sqlite_app_armor sqlite_column_metadata sqlite_foreign_keys sqlite_fts5 sqlite_icu sqlite_introspect sqlite_json sqlite_math_functions sqlite_preupdate_hook sqlite_secure_delete sqlite_see sqlite_stat4 sqlite_trace sqlite_unlock_notify sqlite_userauth sqlite_vacuum_incr sqlite_vtable binalyze_sqlite3_all" ./...
+        shell: msys2 {0}
+
+      - name: 'Tags: vacuum'
+        run: go build -race -v -tags "sqlite_vacuum_full"
+        shell: msys2 {0}
+
+# based on: github.com/koron-go/_skeleton/.github/workflows/go.yml
