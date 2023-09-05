@@ -98,6 +98,7 @@ jobs:
         if: ${{ matrix.msystem == 'MINGW32' }}
         run: |
           export CGO_ENABLED=1
+          export GOARCH=386
           go test -count=1 -failfast -v -tags "binalyze_sqlite3_all" ./binalyze/...
         shell: msys2 {0}
 
