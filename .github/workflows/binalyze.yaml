@@ -86,19 +86,23 @@ jobs:
           go test -count=1 -failfast $race_flag $parallel_flag -v -tags "" ./...
         shell: msys2 {0}
 
-      - name: 'Tags: full'
+      - name: 'Tags: full' # 32bit go test fails due to lack of github hosted runners, so we use 64bit go test only for all tags.
+        if: ${{ matrix.msystem == 'MINGW64' }}
         run: |
           export CGO_ENABLED=1
-          export GOARCH=${{ matrix.msystem == 'MINGW64' && 'amd64' || '386' }}
-          export GOMEMLIMIT=${{ matrix.msystem == 'MINGW32' && '64MiB' || '' }}
-          export GOGC=${{ matrix.msystem == 'MINGW32' && '20' || '' }}
-          race_flag=${{ matrix.msystem == 'MINGW64' && '-race' || '' }}
-          parallel_flag=${{ matrix.msystem == 'MINGW32' && '-parallel=1' || '' }}
           # excluded: sqlite_icu
-          go test -count=1 -failfast $race_flag $parallel_flag -v -tags "sqlite_allow_uri_authority sqlite_app_armor sqlite_column_metadata sqlite_foreign_keys sqlite_fts5 sqlite_introspect sqlite_json sqlite_math_functions sqlite_preupdate_hook sqlite_secure_delete sqlite_see sqlite_stat4 sqlite_trace sqlite_unlock_notify sqlite_userauth sqlite_vacuum_incr sqlite_vtable binalyze_sqlite3_all" ./...
+          go test -count=1 -failfast -v -tags "sqlite_allow_uri_authority sqlite_app_armor sqlite_column_metadata sqlite_foreign_keys sqlite_fts5 sqlite_introspect sqlite_json sqlite_math_functions sqlite_preupdate_hook sqlite_secure_delete sqlite_see sqlite_stat4 sqlite_trace sqlite_unlock_notify sqlite_userauth sqlite_vacuum_incr sqlite_vtable binalyze_sqlite3_all" ./...
+        shell: msys2 {0}
+      
+      - name: 'Tags: binalyze'
+        if: ${{ matrix.msystem == 'MINGW32' }}
+        run: |
+          export CGO_ENABLED=1
+          go test -count=1 -failfast -v -tags "binalyze_sqlite3_all" ./binalyze/...
         shell: msys2 {0}
 
       - name: 'Tags: vacuum'
+        if: ${{ matrix.msystem == 'MINGW64' }}
         run: go build -race -v -tags "sqlite_vacuum_full"
         shell: msys2 {0}
 
